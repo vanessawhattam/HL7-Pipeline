@@ -1,0 +1,9 @@
+2024-01-30 Update: 
+o Progress: What you have accomplished since last week’s post?
+  - This week I grouped my data into the three tables that I will build my dashboard off of
+o Problems: What are you stuck on or struggling with?
+  - I'm trying to figure out how to to store the data that's drawn down each day. My current idea is to use a SQL Server database because it's approved by the State IT team. I need to request it so I can stop storing things in an Access database.
+o Plans: What do you intend to accomplish between now and next week’s post?
+  - I plan to finalize the columns in my tables and ensure that the values are all parsing correctly (previously had some issues with dates). 
+o How many hours did you spend working on your Capstone since last week’s post?
+  - 16ish

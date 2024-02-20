@@ -1,3 +1,14 @@
+2024-02-20 Update: 
+o Progress: What you have accomplished since last week’s post?
+  - I found a bug in my code that was limiting the number of messages that were read correctly and fixed it
+  - Worked on exporting the data to a SQL database
+o Problems: What are you stuck on or struggling with?
+  - Still working on modeling and spending more time with the ARIMAX
+o Plans: What do you intend to accomplish between now and next week’s post?
+  - I want to decide on a model so I can move toward building my dashboard (again)
+o How many hours did you spend working on your Capstone since last week’s post?
+  - ~15
+
 2024-02-13 Update: 
 o Progress: What you have accomplished since last week’s post?
   - I started writing the "easier" sections of my paper, like data details

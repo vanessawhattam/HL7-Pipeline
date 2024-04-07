@@ -1,3 +1,15 @@
+2024-04-09 Update: 
+o Progress: What you have accomplished since last week’s post?
+  - Turned in revised written product. Finally got SQL server on work computer so I can stop storing data updates in CSV files 
+o Problems: What are you stuck on or struggling with?
+  - Reconciling all of my code, commenting, and creating a nice-looking GitHub repository. Need to update code to write and read from SQL server.
+o Plans: What do you intend to accomplish between now and next week’s post?
+  - Comment code, make file names descriptive, and expand the readme. (cont)
+o How many hours did you spend working on your Capstone since last week’s post?
+  - ~12
+
+-------------------------------------------------------------------------------------------------------------------------
+
 2024-04-02 Update: 
 o Progress: What you have accomplished since last week’s post?
   - Turned in first draft of digital product! 

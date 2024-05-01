@@ -16,7 +16,7 @@ library(odbc)
 con <- dbConnect(odbc::odbc(), 
                  dsn = "SQL_Server_Connection")
 
-# Option 2: Switch Database using SQL commands
+# Make sure we're using the correct database in our SQL Server environment
 dbExecute(con, "USE ELRDQMS")
 
 # Add the source data as an object in R
@@ -24,15 +24,22 @@ combined_df <- dbGetQuery(con, "Select *
                  FROM source_data")
 
 
-# Okay so I've identified my paired columns
-# Now, I need to figure out how to apply it to my data table
-# I need to apply the case_when to when the _3 column is covid and the _5 is detected
+# Create column pairs for the test name column and result column --------------------
+# OBX_D_3 is the test and OBX_D_5 is the result where D is a digit
 
-obx_test_name_cols <- tibble(test_colname = grep("OBX_\\d{1,2}_3", colnames(combined_df), value = TRUE),
+# Create a table of all of the test name columns
+obx_test_name_cols <- tibble(test_colname = grep("OBX_\\d{1,2}_3", 
+                                                 colnames(combined_df), 
+                                                 value = TRUE),
                              obx_num = str_sub(test_colname, 5,-3))
-obx_test_result_cols <- tibble(result_colname = grep("OBX_\\d{1,2}_5", colnames(combined_df), value = TRUE),
+
+# And then create a table of all the test result columns
+obx_test_result_cols <- tibble(result_colname = grep("OBX_\\d{1,2}_5", 
+                                                     colnames(combined_df), 
+                                                     value = TRUE),
                                obx_num = str_sub(result_colname, 5,-3))
 
+# Then join those two tables together so our tests and results are paired
 col_pairs <- obx_test_name_cols %>%
   left_join(obx_test_result_cols) %>% 
   relocate(obx_num, .after = result_colname)
@@ -49,22 +56,6 @@ condition_test <- combined_df %>%
 # Let's see if we can get these cols to match ----------------------------------
 covid_test_pattern <- "COVID-19|CoV|SARS coronavirus|Covid-19 PCR|COVID|SARS CORONAVIRUS 2|SARS coronavirus 2|SARS-COV-2|SARS-CoV-2|SARS-related coronavirus|COVPCR|COV2|COVIDBC"
 covid_result_pattern <- "^Detected|^detected|^SARS-CoV-2|^COVID 19 Detected|^Identified|^SARS-CoV-2 DETECTED|^DETECTED|^SARS-CoV-2 RNA DETECTED|Positive|POSITIVE"
-
-# col_pairs has the pairs of all of my columns
-# so I need something like "if col in test_col matches covid test pattern AND col in result_col matches covid result pattern (this needs to be row-wise), then value in condition column should be "COVID positive" else "other" 
-
-# Assuming condition_test is your dataframe and col_pairs is your col_pairs dataframe
-
-# Vectorized function to check if both test and result columns match patterns
-check_covid <- function(test_col, result_col) {
-  test_matches <- grepl(covid_test_pattern, test_col, ignore.case = TRUE)
-  result_matches <- grepl(covid_result_pattern, result_col, ignore.case = TRUE)
-  if (any(test_matches) && any(result_matches)) {
-    return("COVID positive")
-  } else {
-    return("other")
-  }
-}
 
 # Create an empty condition column in condition_test dataframe
 condition_test$condition <- NA
@@ -92,44 +83,63 @@ condition_test$condition[is.na(condition_test$condition)] <- "other"
 
 #--------------------------------------------------------------------------------
 
-# Define the date range
+# Define the date range. Start on 2022-10-01 because that's the earliest data
 date_range <- seq(as.Date("2022-10-01"), Sys.Date(), by = "day")
 
 # Create a covid dataframe
 covid_test <- condition_test %>%
+  # Fill in any days that are missing from the date range
   complete(date = date_range) %>%
+  # Make sure we don't have any erroneous future dates in the dataframe
   filter(date %in% c(date_range),
+          # We keep the NA condition values b/c those are the rows we created
+          # for the missing dates - their counts will be 0, but we still need them
          condition %in% c(NA, "COVID positive")) %>%
+  # Change the NA values to COVID positive 
   mutate(condition = case_when(is.na(condition) ~ "COVID positive",
                                 .default = as.character(condition)),
+         # Create date, week, and year columns
          date = as.Date(date),
          week = week(date),
          year = year(date),
+         # Modify the count column so that NAs are changed to 0
          count = if_else(is.na(count), 0, count)) %>%
+  # Group by date
   group_by(condition, date, week, year) %>%
+  # Get the total number of COVID positives for each day
   summarise(count = sum(count)) %>%
   ungroup()
 
+# Run EWMA on COVID data ----------------------------------------------------------
 
-
+# Create time series data out of the COVID counts
 covid_ewma_volume <- zoo(covid_test$count)
 
+# Run the EWMA on the newly created COVID time series data
 covid_ewma_volume <- EMA(covid_ewma_volume)
 
+# Add the results of the EWMA back to the dataframe
 covid_test <- covid_test %>%
+  # Make sure date column is formatted correctly
   mutate(date = as.Date(date),
+         # Add a column for the predictions generated by EWMA
          covid_ewma_pred = covid_ewma_volume,
+         # Find the difference between the predicted and actual values
          difference = count - covid_ewma_pred,
-         standard_deviation = sd(difference, na.rm = TRUE), # Calculate standard deviation, excluding NA values
-         lower_bound = covid_ewma_pred - z * standard_deviation,
-         upper_bound = covid_ewma_pred + z * standard_deviation,
+         # Calculate the standard deviation 
+         standard_deviation = sd(difference, na.rm = TRUE), 
+         # Calculate the upper confidence interval - 97.5% confidence
+         upper_bound = covid_ewma_pred + (z * standard_deviation),
+         # Add alerts column for when actual values are above CI or count is 0
          alert = case_when(count > upper_bound ~ 2,
                            count == 0 ~ 1,
                            .default = 0),
+         # Calculate the difference in count from the previous day
+         # This helps us know day to day how different the positive test counts are
          percent_difference = ((count - lag(count))/lag(count))*100
          )
 
-
-write_csv(covid_test, "//state.mt.ads/HHS/Shared/PHSD/DIV-SHARE/OESS/Surveillance and Informatics Section/Special Projects/ELR_data_quality_monitoring/elr-data-monitoring-system/covid_data.csv")
+# Write to CSV because that's what Tableau storyboard uses 
+write_csv(covid_test, "covid_data.csv")
   
 

@@ -17,7 +17,7 @@ library(odbc)
 con <- dbConnect(odbc::odbc(), 
                  dsn = "SQL_Server_Connection")
 
-# Option 2: Switch Database using SQL commands
+# Make sure we're using the correct database in our SQL Server environment
 dbExecute(con, "USE ELRDQMS")
 
 # Add the source data as an object in R

@@ -35,24 +35,24 @@ cd capstone
 
 ### Usage
 These examples are again provided using terminal commands, however, they can also be run in your favorite IDE, such as VSCode or RStudio. 
-1. The `RUN_FIRST_hl7_parsing.py` file should be run first. The HL7 parser takes HL7 messages in text file-like formats. Ensure that the raw data are placed into a directory called `Input_Files`. Comment out line 91 of the `RUN_FIRST_hl7_parsying.py` if your data pipeline does not include manual uploads of errored messages. This file will parse each HL7 message sent within the last 24 hours, and add it as a row to our combined_df dataframe. This dataframe will then be appended to a SQL Server database table called `source_data`. 
+1. The `1_hl7_parsing.py` file should be run first. The HL7 parser takes HL7 messages in text file-like formats. Ensure that the raw data are placed into a directory called `Input_Files`. Comment out line 91 of the `1_hl7_parsying.py` if your data pipeline does not include manual uploads of errored messages. This file will parse each HL7 message sent within the last 24 hours, and add it as a row to our combined_df dataframe. This dataframe will then be appended to a SQL Server database table called `source_data`. 
 ```bash
-python RUN_FIRST_hl7_parsing.py
+python 1_hl7_parsing.py
 ```
 
-2. The `RUN_SECOND_facility_volume_modeling.R` reads from the SQL Server `source_data` table, groups the data by date and facility, then runs the EWMA model. To run this file, ensure that the `facility_list.csv` file is located in the same directory. Finally, this file runs an initial data quality check on the HL7 messages. The results are written to a CSV file to use in the Tableau dashboard.
+2. The `2_facility_volume_modeling.R` reads from the SQL Server `source_data` table, groups the data by date and facility, then runs the EWMA model. To run this file, ensure that the `facility_list.csv` file is located in the same directory. Finally, this file runs an initial data quality check on the HL7 messages. The results are written to a CSV file to use in the Tableau dashboard.
 ```bash
-Rscript RUN_SECOND_facility_volume_modeling.R
+Rscript 2_facility_volume_modeling.R
 ```
 
 
-3. The final file in this repository, `RUN_THIRD_covid_volume_model.R` works with the COVID-19 test results. As with `RUN_SECOND_facility_volume_modeling.R`, the `RUN_THIRD_covid_volume_model.R` sources its data from the SQL Server `source_data` table. the Positive COVID-19 tests are identified, grouped together by date and disease (this is for future proofing of adding additional disease) and the anomaly detection model is run. The results are written to a CSV file to use in the Tableau dashboard.
+3. The final file in this repository, `3_covid_volume_model.R` works with the COVID-19 test results. As with `2_facility_volume_modeling.R`, the `3_covid_volume_model.R` sources its data from the SQL Server `source_data` table. the Positive COVID-19 tests are identified, grouped together by date and disease (this is for future proofing of adding additional disease) and the anomaly detection model is run. The results are written to a CSV file to use in the Tableau dashboard.
 ```bash
-Rscript RUN_THIRD_covid_volume_model.R
+Rscript 3_covid_volume_model.R
 ```
 
 ### Package dependencies
-The code in the `RUN_FIRST_hl7_parsing.py` file was written under Python 3.12.0. Required packages include: 
+The code in the `1_hl7_parsing.py` file was written under Python 3.12.0. Required packages include: 
 
 * `os`
 * `re`
@@ -64,7 +64,7 @@ The code in the `RUN_FIRST_hl7_parsing.py` file was written under Python 3.12.0.
 * `sqlalchemy` 
 * `datetime` 
 
-The code in `RUN_SECOND_facility_volume_modeling.R` and `RUN_THIRD_covid_colume_model.R` were written under R version 4.3.2. The following packages are required for these files: 
+The code in `2_facility_volume_modeling.R` and `3_covid_colume_model.R` were written under R version 4.3.2. The following packages are required for these files: 
 
 * `tidyverse`
 * `mosaic`

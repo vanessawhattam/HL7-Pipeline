@@ -12,7 +12,7 @@ library(odbc)
 
 # Read in the datasets ---------------------------------------------------------
 
-# Connect to the SQL Server database using the ODBC DSN
+# Connect to the SQL Server database
 con <- dbConnect(odbc::odbc(), 
                  dsn = "SQL_Server_Connection")
 
@@ -80,13 +80,6 @@ confidence_level <- 0.95
 # Critical value for the confidence level
 z <- qnorm((1 + confidence_level) / 2)
 
-# Function to calculate prediction intervals based on the standard deviation
-calculate_prediction_intervals <- function(predicted_value, standard_deviation) {
-  lower_bound <- predicted_value - z * standard_deviation
-  upper_bound <- predicted_value + z * standard_deviation
-  return(c(lower_bound, upper_bound))
-}
-
 # Get a list of the unique facility names 
 # Use this to run EWMA model for each individual facility
 facilities <- unique(d1$clean_facility_name)
@@ -106,21 +99,33 @@ for (x in facilities) {
   # Run EWMA on the new time series data
   ewma_volume <- EMA(ewma_volume)
   
-  # Add in conf intervals, alerts, etc
+  # Add in columns for predictions, conf interval, alerts, etc
   df <- df %>%
     # Ensure the date column is formatted as date
     mutate(date = as.Date(date),
            # Add the EWMA prediction to the dataframe
-           ewma_pred = round(ewma_volume, digits = 3), 
-           # Calculate the difference between the actual and predicted values
-           difference = round(count - ewma_pred, digits = 3),
-           # And the percent difference between the actual and predicted values
-           percent_difference = round(((count - ewma_pred)/ewma_pred)*100, 
+           ewma_pred = round(ewma_volume, 
+                             digits = 3), 
+           # Calculate the difference between 
+           # the actual and predicted values
+           difference = round(count - ewma_pred,
+                              digits = 3),
+           # And the percent difference between 
+           # the actual and predicted values
+           percent_difference = round(((count 
+                                        - ewma_pred)
+                                        /ewma_pred)
+                                        *100, 
                                       digits = 3),
-            # Calculate standard deviation, excluding NA values
-           standard_deviation = round(sd(difference, na.rm = TRUE), digits = 3),
-           # Calculate the upper 97.5% confidence intervals
-           upper_bound = round(ewma_pred + z * standard_deviation, digits = 3),
+            # Calculate standard deviation
+           standard_deviation = round(sd(difference, 
+                                         na.rm = TRUE), 
+                                      digits = 3),
+           # Calculate the upper 97.5% confidence interval
+           upper_bound = round(ewma_pred
+                               + z 
+                               * standard_deviation, 
+                              digits = 3),
            # Add an alert column 
            alert = case_when(count > upper_bound ~ 2,
                              count == 0 ~ 1,

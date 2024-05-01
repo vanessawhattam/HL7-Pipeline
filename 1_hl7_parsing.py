@@ -111,14 +111,17 @@ for source_file in main_directory:
     new_filename = os.path.splitext(filename)[0] + '.txt'
     # Create the full path of the destination file in the temporary directory
     destination_file = os.path.join(temp_dir, new_filename)
-    # Copy the source file to the temporary directory and change its extension to .txt
+    # Copy the source file to the temporary directory 
+    #vand change its extension to .txt
     shutil.copyfile(source_file, destination_file)
 
     # Check if the file has a valid file extension
     if any(new_filename.endswith(ext) for ext in valid_extensions):
         try:
-            # Read the file and split it into a list of messages based on MSH segment
-            # This is for batched messages where a file contains more than one message
+            # Read the file and split it into a list of messages 
+            # based on MSH segment.
+            # This is for batched messages where a file 
+            # contains more than one message.
             with open(destination_file, 'r', errors='replace') as file:
                 hl7_messages_list = file.read().split('MSH')
 
@@ -142,15 +145,19 @@ for source_file in main_directory:
                 # errored when we didn't do this
                 df = df.astype(str)
 
-                # Now we want to split the segments so each component is its own column
+                # Now we want to split the segments so each 
+                # component is its own column
                 for column in df.columns:
                     # Check if the column contains string values
                     if df[column].dtype == 'O':
-                        # Split the values in the column using "|" as the delimiter
+                        # Split the values in the column using 
+                        # "|" as the delimiter
                         split_columns = df[column].str.split('|', expand=True)
 
                         # Add a separator "." to the column names
-                        split_columns.columns = split_columns.columns.map(lambda x: f'{column}.{x}')
+                        split_columns.columns = split_columns.columns.map(
+                            lambda x: f'{column}.{x}'
+                            )
 
                         # Concatenate the new columns to the original DataFrame
                         df = pd.concat([df, split_columns], axis=1)
@@ -178,14 +185,17 @@ for source_file in main_directory:
                                     ]
 
                 # Add OBX columns matching the pattern OBX-\d.3, OBX-\d.5, and OBX-\d.14
-                obx_columns = [col for col in df.columns if re.match(r'OBX-\d{1,2}\.(3|5|14)$', col)]
+                obx_columns = [col for col in df.columns 
+                               if re.match(r'OBX-\d{1,2}\.(3|5|14)$', col)
+                               ]
                 selected_columns.extend(obx_columns)
 
                 # Get the columns present in df
                 existing_columns = df.columns.tolist()
 
                 # Identify if the dataframe is missing any of the selected_columns
-                missing_columns = [col for col in selected_columns if col not in existing_columns]
+                missing_columns = [col for col in selected_columns
+                                   if col not in existing_columns]
 
                 # If there are missing columns, create them and fill them with blanks
                 # Put them into a dataframe
@@ -208,14 +218,16 @@ for source_file in main_directory:
         except UnicodeDecodeError as e:
             # Add the file path and the error message to the dataframe
             errors_df = errors_df.append({'file_path': destination_file, 
-                                          'error_message': str(e)}, ignore_index=True)
+                                          'error_message': str(e)},
+                                            ignore_index=True)
             print(f"Error processing file: {destination_file}. 
                   Error message: {str(e)}")
             continue
         except FileNotFoundError as e:
             # Add the file path and the error message to the dataframe
             errors_df = errors_df.append({'file_path': destination_file, 
-                                          'error_message': str(e)}, ignore_index=True)
+                                          'error_message': str(e)}, 
+                                          ignore_index=True)
             print(f"File not found: {destination_file}. 
                   Error message: {str(e)}")
             continue
@@ -237,7 +249,8 @@ engine = create_engine('mssql+pyodbc://', creator=lambda: con)
 table_name = 'source_data' 
 
 # Create SQL query to create table if needed
-columns = ", ".join([f"{sanitize_column_name(col)} VARCHAR(MAX)" for col in combined_df.columns]) 
+columns = ", ".join([f"{sanitize_column_name(col)} VARCHAR(MAX)" 
+                     for col in combined_df.columns]) 
 
 # Write the table creation query
 create_table_query = f"CREATE TABLE IF NOT EXISTS {table_name} ({columns})"
@@ -249,7 +262,8 @@ cursor.execute(create_table_query)
 con.commit()
 
 # Sanitize the column names to make the data match
-combined_df.columns = [sanitize_column_name(col) for col in combined_df.columns]
+combined_df.columns = [sanitize_column_name(col) for col 
+                       in combined_df.columns]
 
 # Insert DataFrame into SQL Server tabl0
 combined_df.to_sql(table_name, con=engine, if_exists='append', index=False)
@@ -266,7 +280,7 @@ columns = [row.COLUMN_NAME for row in cursor.fetchall()]
 criteria = ','.join(columns)
 
 # Execute SQL query to remove duplicate rows
-sql_query = f'''
+sql_query = f"""
 WITH CTE AS (
     SELECT *, ROW_NUMBER() 
     OVER (PARTITION BY {criteria} 
@@ -275,7 +289,7 @@ WITH CTE AS (
 )
 DELETE FROM CTE
 WHERE rn > 1;
-'''
+"""
 
 cursor.execute(sql_query)
 

@@ -22,6 +22,7 @@ Part 3: Report cards - to be initiated
 - `hl7_totext_conversion.ipynb`: This file converts the HL7 messages to *.txt files so that they can be read into a pandas dataframe 
 - `time_limiting_function.ipynb`: This file limits the files read to those that were received within the last 24 hours. This reduces the runtime of the script 
 - `hl7_dataframe_testing.ipynb`: This file is the one that actually reads in the HL7 messages, parses them into a dataframe, aggregates based on facility and date, and cleans the facility names
+- `facility_list.csv`: This file contains a crosswalk for the various facility names sent in the MSH segment of the HL7 messages to a clean version of the facility name. This file is necessary for the code to work, as well as ensuring continuity in feeds as facilities change their names. The file can be found in the shared folder on the network drive: [REDACTED]
 
 ## Package dependencies
 The original code was written under Python 3.12.0. Required packages include `os`, `re`, `pandas`, `datetime`, `collections`, `statsmodels.api`, `pyodbc`. 

@@ -1,3 +1,4 @@
+# Get the libraries we need
 library(tidyverse)
 library(mosaic)
 library(janitor)
@@ -6,10 +7,21 @@ library(tis)
 library(TTR)
 library(zoo)
 library(forecast)
+library(DBI)
+library(odbc)
 
-# Read in the dataframe we created in Python 
-source("//state.mt.ads/HHS/Shared/PHSD/DIV-SHARE/OESS/Surveillance and Informatics Section/Special Projects/ELR_data_quality_monitoring/elr-data-monitoring-system/elr_volume_modeling.R")
+# Read in the dataset ---------------------------------------------------------
 
+# Connect to the SQL Server database using the ODBC DSN
+con <- dbConnect(odbc::odbc(), 
+                 dsn = "SQL_Server_Connection")
+
+# Option 2: Switch Database using SQL commands
+dbExecute(con, "USE ELRDQMS")
+
+# Add the source data as an object in R
+combined_df <- dbGetQuery(con, "Select *
+                 FROM source_data")
 
 
 # Okay so I've identified my paired columns
